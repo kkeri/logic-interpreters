@@ -2,3 +2,5 @@
 *~
 hie.yaml
 *.cabal
+*.lock
+
