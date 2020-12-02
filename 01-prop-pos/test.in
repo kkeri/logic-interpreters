@@ -1,0 +1,71 @@
+.t trivial equations
+.eq a a
+.eq {a} a
+.eq [a] a
+
+# Monotonic boolean laws
+
+.t identity
+.eq {a {}} a
+.eq [a []] a
+
+.t annihilator
+.eq {a []} []
+.eq [a {}] {}
+
+.t idempotence
+.eq {a a} a
+.eq [a a] a
+
+.t associativity
+.eq {a {b c}} {{a b} c}
+.eq [a [b c]] [[a b] c]
+
+.t commutativity
+.eq {a b} {b a}
+.eq [a b] [b a]
+
+.t absorption
+.eq {a [a b]} a
+.eq [a {a b}] a
+
+#.t distributivity
+#.eq {a [b c]} [{a b} {a c}]
+#.eq [a {b c}] {[a b] [a c]}
+
+# Inference rules
+
+.t trivial derivation
+a
+.as a
+
+.t conjunction introduction
+a
+b
+.as {a b}
+
+.t conjunction elimination
+{a b}
+.as a
+.as b
+
+.t disjunction introduction
+a
+.as [a b]]
+.c
+b
+.as [a b]]
+
+# Note: disjunction elimination can't be expressed without implication
+
+#.t permutation
+#.eq {a b c} {c b a}
+#.eq [a b c] [c b a]
+
+.t compound case 1
+{a b c}
+.as [c d e]
+
+.t compound case 2
+#.eq [{a b} {a b}] {a b}
+#.eq [{a b} {c b}] {a b c}
