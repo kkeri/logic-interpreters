@@ -53,12 +53,13 @@ b
 .as a
 .as b
 
-.t disjunction introduction
+.t disjunction introduction 1
 a
-.as [a b]]
-.c
+.as [a b]
+
+.t disjunction introduction 2
 b
-.as [a b]]
+.as [a b]
 
 # Note: disjunction elimination can't be expressed without implication
 
