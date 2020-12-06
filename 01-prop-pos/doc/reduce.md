@@ -91,6 +91,8 @@ For every environment `e` and proposition `p`,
 It can be read as the solution of `p` gives us what is 'missing' from
 the environment to make `p` a theorem.
 
+[...]
+
 ## Further readings
 
 [Interactive sequent calculus tutorial](http://logitext.mit.edu/tutorial)

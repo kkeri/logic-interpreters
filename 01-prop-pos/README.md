@@ -84,7 +84,7 @@ It repeats three steps:
 3. Writes the value to the output.
 
 Below is a short dialog with a Lisp REPL.
-You can even try it out [online](http://lisperator.net/slip/).
+You can even try it out [online](http://lisperator.net/slip/) (click open demo).
 
 ~~~ lisp
 > (setq x 3)  ; define the global variable 'x'
@@ -96,8 +96,8 @@ You can even try it out [online](http://lisperator.net/slip/).
 You may have noticed that something is missing from the three steps above.
 Some terms, called *declarations* are special.
 Those terms can alter the interpretation of subsequent terms.
-To be able to remember them, the interpreter maintains an internal
-*environment*, and every time it encounters a declaration, extends the
+To be able to remember them, the interpreter maintains an *environment*,
+and every time it encounters a declaration, extends the
 environment with it.
 
 How can we adapt this pattern to our interpreter?
@@ -139,7 +139,7 @@ terminated> .c -- 'terminated' indicates failure
 Theorem proof is a [decision problem](https://en.wikipedia.org/wiki/Decision_problem),
 but the real strength of the interpreter relies in its *problem reduction*
 capabilities.
-We can ask the interpreter what is 'missing' to make a term a theorem.
+We can ask the interpreter 'what is missing' to make a term a theorem.
 Eventually a theorem is just a term that evaluates to true:
 
 ~~~haskell
