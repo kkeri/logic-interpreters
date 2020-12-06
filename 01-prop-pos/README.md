@@ -10,6 +10,8 @@ what is a logic interpreter?
 A successful answer creates a viable conceptual framework for upcoming projects
 as well as an extendable code base.
 
+__Disclaimer:__ the core algorithm is still under development.
+
 ## Motivation
 
 Throughout a line of projects I'd like to develop an interactive
