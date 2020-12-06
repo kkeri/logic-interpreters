@@ -1,28 +1,61 @@
 # 01-prop-pos
 
-This project implements an interpreter for logical formulas in the
-positive fragment (∧, ∨) of propositional logic.
-It is also a starting point for upcoming projects.
+This project implements a logic formula interpreter in
+the positive fragment of propositional logic.
+Hopefully this is the first one in a series of prototypes where each one
+will extend its predecessors or explore new directions. 
+
+The main contribution of this initial project is asking the question:
+what is a logic interpreter?
+A successful answer creates a viable conceptual framework for upcoming projects
+as well as an extendable code base.
+
+## Motivation
+
+Throughout a line of projects I'd like to develop an interactive
+problem solving environment.
+A problem can be either an abstract logic problem or an
+everyday operative task.
+Think of the usual activities of power users:
+finding and organizing information, interacting with databases,
+automating repetitive tasks, managing processes, communication etc.
+I envision an environment where *doing* is almost the same as programming.
+
+Surprisingly the environment which best approximates this idea is
+the command line with shell scripting.
+A possible reason is that command line tools offer strong abstractions
+(processes, input, output, pipes)
+that support composition more than any kind of GUI.
+
+The [CALM theorem](https://rise.cs.berkeley.edu/blog/an-overview-of-the-calm-theorem/)
+(consistency as logical monotonicity)
+calls for another promising use case: the implementation of distributed
+cooperation networks.
 
 ## Getting started
 
-After building the project,
-start the read-eval-print loop with `stack run`.
-Enter terms at the prompt and let the program interpret them.
-During the session you can get help on commands by typing `.h`.
+Initialize the project with `stack setup`,
+then start the read-eval-print loop with `stack run`.
+Enter terms at the prompt and let the program interpret them for you.
+You can also issue meta level commands (see below).
 
 ## Syntax
+
+Propositional formulas are written in an alternative syntax
+which I believe fits well with programming languages.
+Instead of binary operators, logic connectives are expressed in
+n-ary block format.
 
 ~~~haskell
 -- terms
 
 t, u       -- names (atoms)
 
-{}         -- empty conjunction, also the Top element
+{}         -- empty conjunction, also ⊤
 {t}        -- the same as t
 {t u...}   -- conjunction of multiple elements
 
-[]         -- empty disjunction, also the Bottom element
+[]         -- empty disjunction, also ⊥
 [t]        -- the same as t
 [t u...]   -- disjunction of multiple elements
 
@@ -30,165 +63,129 @@ t, u       -- names (atoms)
 
 .l         -- list the environment
 .c         -- clear the environment
-.as t      -- assert a term
+.h         -- get help on all commands
+.th t      -- assert t is a theorem
 .eq t u    -- assert equality of two terms
 ~~~
 
 ## Interpretation
 
-The interpreter maintains an environment, which is initially empty.
-Once the user enters a term, the following steps are taken.
+Let me remind you that my intention here is to place an extendable calculus
+into a workflow familiar with programmers.
+Having only a barebone calculus it's not easy to demonstrate,
+so let me guide you
+even if the purpose of everything is not obvious yet.
 
-1. The term is evaluated in the environment.
-2. The value of the term is printed to the output.
-3. The environment is extended with the value.
-4. A new prompt is displayed.
+First, let's look at the interpreter as a read-eval-print loop.
+It repeats three steps:
 
-Example:
+1. Reads a term from the input.
+2. Evaluates the term.
+3. Writes the value to the output.
 
-~~~haskell
-> a      -- the user enters 'a'
-a        -- 'a' evaluates to itself
-> .l     -- list the environment
-a        -- 'a' is appended to the environment
-~~~
-
-Why does it work like this? Two analogies may help to make sense of it.
-
-The first one is the read-eval-print loop of programming languages like Lisp.
-If one enters an S-expression in a Lisp interpreter, the expression is
-evaluated and the result is printed out. If the expression happens to be
-a definition, it also gets added to the environment.
-When the user enters another term, the new definition may participate in its
-evaluation.
+Below is a short dialog with a Lisp REPL.
+You can even try it out [online](http://lisperator.net/slip/).
 
 ~~~ lisp
-> (setq x 3)  ; Lisp
+> (setq x 3)  ; define the global variable 'x'
 3
-> (+ x 1)
-4
+> (+ x 1)     ; read and evaluate 'x+1'
+4             ; print its value
 ~~~
 
-The other metaphor is that of mathematical reasoning. In an argument one
-uses definitions, theorems and proofs. If we constrain ourselves to
-propositional logic, proofs can be automated, so definitions and
-theorems suffice.
-What is the significance of each?
-Definitions provide new facts that can't be proved from axioms.
-The intended "use" of a definition is its inclusion in the set of premises,
-what is the environment of reasoning.
+You may have noticed that something is missing from the three steps above.
+Some terms, called *declarations* are special.
+Those terms can alter the interpretation of subsequent terms.
+To be able to remember them, the interpreter maintains an internal
+*environment*, and every time it encounters a declaration, extends the
+environment with it.
 
-So in both cases it is reasonable to add definitions to the environment.
-But what about theorems? In a decidable system a theorem is a non-fact.
-It doesn't encode any knowledge that couldn't have been derived
-from premises.
-Hence the intended use of theorems is *assertion*, or verification
-of the user's assumptions.
-If an assumption doesn't hold, the argument shouldn't go on.
-The interpreter provides the `.as` command to assert that a proposition
-is a theorem.
+How can we adapt this pattern to our interpreter?
+In the propositional calculus there are no variables, only atoms that stand
+for themselves. So what is a declaration?
+The radical answer: *every term is a declaration*, because
+every term may alter the interpretation of subsequent terms.
 
-~~~haskell
-> {a b}      -- add premise
-{a b}        -- the premise evaluated to itself
-> .l         -- check out the environment
-a
-b
-> .as [a b]  -- verify that '[a b]' can be proved from a,b
->            -- the assertion is verified
-> .as c      -- verify that 'c' holds
-terminated>  -- verification failed this time
-~~~
+## Examples
 
-The default interpretation of a term is a definition.
-Why is it good for us?
+If it helps, you can think about the interpreter as a
+conditional theorem prover.
 
-The main purpose of an interpreter is running programs.
-Programmers know that their programs mainly consist of definitions, so
-it seems to be a good default.
-If a definition happens to be a theorem, it evaluates to a neutral
-proposition that doesn't add anything to the environment.
-If a definition leads to contradiction, the environment
-collapses into `Bottom` that is a terminal state of the interpreter.
-
-~~~haskell
-> []         -- introduce Bottom intentionally
-[]
-terminated>
-~~~
-
-It is even possible to enter terms that fall in between definitions and theorems.
+Below we introduce two premises and verify if their
+conjunction is a theorem, as it should be.
 
 ~~~haskell
 > a
 a
-> {a b}      -- 'a' evaluates to Top, i.e. it is a theorem
-b            -- 'b' evaluates to itself, i.e. it is a definition
+> b
+b
+> .th {a b}
+>              -- empty output indicates success
 ~~~
 
-## Implementation
+If verification failes, the interpreter terminates.
+In interactive mode you can recover from termination by clearing
+the environment.
 
-In this project an *environment* is simply a syntax term,
-but we usually think of it as a sequence of terms or a set of premises.
-When an environment *e* gets extended, a new term *n* is appended to it using
-the `and` operation which computes the conjunction of two terms.
+~~~haskell
+> [a b]
+[a b]
+> .th {a b}
+terminated> .c -- 'terminated' indicates failure
+> .l
+>              -- fresh again!
+~~~
 
-`e' = and e n`
+Theorem proof is a [decision problem](https://en.wikipedia.org/wiki/Decision_problem),
+but the real strength of the interpreter relies in its *problem reduction*
+capabilities.
+We can ask the interpreter what is 'missing' to make a term a theorem.
+Eventually a theorem is just a term that evaluates to true:
 
-The operation defaults to the `e'={e n}` conjunctive pair, so
-eventually an environment is an *n*-ary conjunction of terms.
+~~~haskell
+> {a b}
+{a b}
+> a
+{}
+~~~
 
-*Evaluation* of a term *t* in environment *e* amounts to finding a minimal
-proposition *v* that, together with the current set of premises *e*,
-is sufficient to prove *t*.
-Evaluation is implemented by the `solve` non-commutative operation.
-You can read more about it in the *Problem reduction* section.
+The interpreter answered that 'nothing is missing' for `a` to be a theorem.
+This is the friendly version of assertion.
 
-`v = solve e t`
+Let's try something less obvious.
+A disjunction can be interpreted as the exact list of terms that
+make it a theorem:
 
-When an environment *e* is *extended* with a term *v*, the term is not simply
-appended to the environment, but also retroactively applied to it.
+~~~haskell
+> [e f]
+[e f]
+> e       -- declare one of the alternatives
+e
+> [e f]
+{}        -- it is a theorem now
+> .l
+e         -- where is [e f]?
+~~~
 
-`e' = and (solve v e) v`
+Listing the environment testifies that `[e f]` 'magically' disappeared.
+When the environment is extended, the new declaration is *backpropagated*
+to the environment.
+As `e` implies `[e f]`, the latter became redundant.
+This is not only an optimization but an essential part of the semantics
+of interpretation.
 
-### Nested interpreters
+We can also think about the interpreter as our input was a *program*.
+Eventually a program is just a list of declarations.
+This view is entirely compatible with the *theorem prover* view,
+and it is a nice thing!
+Of course this simple calculus is too skinny for a programming language
+(we don't even have variables and functions) but don't forget,
+this is just the beginning.
 
-Until now I've been talking about the top level interpreter which is a
-*conjunctive* one: composition of environments is computed by the `and`
-operator, which computes the conjunction of terms.
-Consequently, the empty environment is represented by the `Top` term,
-the neutral element of conjunction.
+If you are interested,
+you can learn about the exact details [here](doc/interpret.md).
 
-When the user enters the term `{a b c}`, the program creates a new
-interpreter that interprets all terms between the braces.
-When the parser encounters the closing `}`, the environment accumulated in
-the nested interpreter is returned as a single term.
-
-According to the duality of connectives  (∧, ∨),
-logical interpreters must also have their duals.
-There exist *disjunctive* interpreters, where composition is `or` and
-the neutral element is `Bottom`. Terms like `[d e f]` are interpreted by
-disjunctive interpreters.
-
-### Termination and shortcut semantics
-
-When `Bottom` is appended to a conjunctive environment (or `Top` to a
-disjunctive one), the environment reaches a *terminal* state.
-Interpretation of subsequent terms doesn't alter the environment,
-but the interpreter still hangs up if the evaluation of a term doesn't halt.
-To prevent such a situation, many programming languages applie shortcut
-semantics to logical expressions, where insignificant subexpressions
-are not evaluated at all.
-
-Logical interpreters support shortcut semantics by offering a
-*termination check* predicate.
-Termination check is utilized by the parser which calls interpreters directly.
-
-### Problem reduction
-
-[...]
-
-## Building and running
+## Building, running and testing
 
 ~~~sh
 cd <project-dir>
@@ -205,4 +202,3 @@ stack run
 # running test
 stack run < test.in
 ~~~
-
