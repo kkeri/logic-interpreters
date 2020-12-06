@@ -4,100 +4,100 @@
 
 .t trivial equations
 
-.th a a
-.th {a} a
-.th [a] a
+.eq a a
+.eq {a} a
+.eq [a] a
 
 # Monotonic boolean laws
 
 .t identity
 
-.th {a {}} a
-.th [a []] a
+.eq {a {}} a
+.eq [a []] a
 
 .t annihilator
 
-.th {a []} []
-.th [a {}] {}
+.eq {a []} []
+.eq [a {}] {}
 
 .t idempotence
 
-.th {a a} a
-.th [a a] a
+.eq {a a} a
+.eq [a a] a
 
 .t associativity
 
-.th {a {b c}} {{a b} c}
-.th [a [b c]] [[a b] c]
+#.eq {a {b c}} {{a b} c}
+#.eq [a [b c]] [[a b] c]
 
 .t commutativity
 
-.th {a b} {b a}
-.th [a b] [b a]
+.eq {a b} {b a}
+.eq [a b] [b a]
 
 .t absorption
 
-.th {a [a b]} a
-.th [a {a b}] a
+.eq {a [a b]} a
+.eq [a {a b}] a
 
 #.t distributivity
 
-#.th {a [b c]} [{a b} {a c}]
-#.th [a {b c}] {[a b] [a c]}
+#.eq {a [b c]} [{a b} {a c}]
+#.eq [a {b c}] {[a b] [a c]}
 
 # Inference rules of natural deduction
 
 .t trivial derivation
 
 a
-.as a
+.th a
 
 .t truth introduction
 
-.as {}
+.th {}
 
 .t falsehood elimination
 # note: introducing falsehood in the environment would terminate the program
 # so we have to do the derivation in isolation.
 
-.so [] a
-.as a
+.re [] a
+.th a
 
 .t conjunction introduction
 
 a
 b
-.as {a b}
+.th {a b}
 
 .t conjunction elimination
 
 {a b}
-.as a
-.as b
+.th a
+.th b
 
 .t disjunction introduction 1
 
 a
-.as [a b]
+.th [a b]
 
 .t disjunction introduction 2
 
 b
-.as [a b]
+.th [a b]
 
 # Note: disjunction elimination can't be expressed without implication
 
 .t permutation
 
-#.th {a b c} {c b a}
-#.th [a b c] [c b a]
+#.eq {a b c} {c b a}
+#.eq [a b c] [c b a]
 
 .t compound case 1
 
 {a b c}
-.as [c d e]
+.th [c d e]
 
 .t compound case 2
 
-#.th [{a b} {a b}] {a b}
-#.th [{a b} {c b}] {a b c}
+#.eq [{a b} {a b}] {a b}
+#.eq [{a b} {c b}] {a b c}
