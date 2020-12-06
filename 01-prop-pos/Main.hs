@@ -4,7 +4,7 @@ import           Control.Monad (unless, when)
 import           Data.Char
 import           GHC.IO        (unsafePerformIO)
 import           Prelude       hiding (and, init, or, parse)
-import           System.Exit   (exitFailure)
+import           System.Exit   (exitFailure, exitSuccess)
 import           System.IO
 
 ------------------------------------------------------------------------------
@@ -24,23 +24,23 @@ data Tm
 
 -- This part is work in progress --
 
--- The solveDual operation allows for sequent calculus style problem reduction.
+-- The reduceDual operation allows for sequent calculus style problem reduction.
 -- Note: we want to reduce problems to problems (formulae to formulae) rather
--- than to success/failure. To achieve this, both 'solve' and the subresult
+-- than to success/failure. To achieve this, both 'reduce' and the subresult
 -- combinators 'and' and 'or' have to return formulae in the default case.
 
--- Solve the right hand side in the left hand side.
+-- Reduce the right hand side in the left hand side.
 -- Requirements:
 --   Rule application must be confluent.
 --   The left hand side is assumed to be a normal form.
-solveDual :: Tm -> Tm -> Tm -> Tm
-solveDual neut = solve where
-  solve a (And b c)   = and (solve a b) (solve a c)    -- R∧
-  solve (And a b) c   = or  (solve a c) (solve b c)    -- L∧
-  solve a (Or b c)    = or  (solve a b) (solve a c)    -- R∨
-  solve (Or a b) c    = and (solve a c) (solve b c)    -- L∨
-  solve a b | a == b  = neut                           -- axiom
-  solve _ b = b   -- return the problem unreduced
+reduceDual :: Tm -> Tm -> Tm -> Tm
+reduceDual initial = reduce where
+  reduce a (And b c)   = and (reduce a b) (reduce a c)    -- R∧
+  reduce (And a b) c   = or  (reduce a c) (reduce b c)    -- L∧
+  reduce a (Or b c)    = or  (reduce a b) (reduce a c)    -- R∨
+  reduce (Or a b) c    = and (reduce a c) (reduce b c)    -- L∨
+  reduce a b | a == b  = initial                        -- axiom
+  reduce _ b = b   -- return the problem unreduced
 
 
 -- Normalize the conjunction of two logical terms.
@@ -49,7 +49,6 @@ and Top b = b
 and a Top = a
 and Bottom _ = Bottom
 and _ Bottom = Bottom
-and (And a b) c = And a (And b c)
 and a b | a == b = a
 and a b = And a b  -- defer normalization
 
@@ -60,7 +59,6 @@ or Bottom b = b
 or a Bottom = a
 or Top _ = Top
 or _ Top = Top
-or (Or a b) c = Or a (Or b c)
 or a b | a == b = a
 or a b = Or a b
 
@@ -81,7 +79,7 @@ instance Eq Tm where
 
 -- Generic signature for interpreters.
 data Ip env tm val = Ip
-  { emptyEnv :: env,
+  { initial  :: env,
     eval     :: env -> tm -> val,
     extend   :: env -> val -> env,
     termd    :: env -> Bool,  -- termination check
@@ -99,14 +97,14 @@ data Ip env tm val = Ip
 
 logicIp :: Tm -> Tm -> (Tm -> Tm -> Tm) -> Ip Tm Tm Tm
 logicIp initial terminal append = Ip
-  { emptyEnv = initial,
-    eval     = solve,
-    extend   = \env val -> append (solve val env) val,
+  { initial = initial,
+    eval     = reduce,
+    extend   = \env val -> append (reduce val env) val,
     termd    = (== terminal),
     quote    = const id,
     quoteEnv = id
   } where
-    solve = solveDual initial
+    reduce = reduceDual initial
 
 -- Concrete logical interpreters.
 conjIp = logicIp Top Bottom and
@@ -114,7 +112,7 @@ disjIp = logicIp Bottom Top or
 
 -- Interpret terms in a void domain. Never terminate.
 voidIp = Ip
-  { emptyEnv = (),
+  { initial = (),
     eval     = \_ _ -> (),
     extend   = \_ _ -> (),
     termd    = const False,
@@ -159,8 +157,8 @@ parse parseName bracesIp bracketsIp = parseTerm where
   parseTerm input = case input of
     []                -> error "unexpected end of input"
     TName str  : rest -> (parseName str, rest)
-    TDelim '{' : rest -> parseSeq '}' bracesIp (emptyEnv bracesIp) rest
-    TDelim '[' : rest -> parseSeq ']' bracketsIp (emptyEnv bracketsIp) rest
+    TDelim '{' : rest -> parseSeq '}' bracesIp (initial bracesIp) rest
+    TDelim '[' : rest -> parseSeq ']' bracketsIp (initial bracketsIp) rest
     TDelim d   : _    -> error $ "Unexpected delimiter " ++ [d]
 
   -- Parse a sequence of terms and interpret all of them in an
@@ -257,9 +255,9 @@ evaluate env input =
     printTm nf
     newLine
 
--- Error out if a term doesn't evaluate to true.
-assert :: Env -> [Token] -> IO Env
-assert env input =
+-- Fail if a term doesn't evaluate to true.
+assertTheorem :: Env -> [Token] -> IO Env
+assertTheorem env input =
   let (t, _)      = parseTm input in
   let val         = eval ip env t in
   let nf          = quote ip env val in
@@ -273,7 +271,7 @@ assert env input =
       newLine
       return Bottom
 
--- Error out if two terms are not equal.
+-- Fail if two terms are not equal.
 assertEq :: Env -> [Token] -> IO Env
 assertEq env input =
   let (a, rest)   = parseTm input in
@@ -290,24 +288,37 @@ assertEq env input =
       newLine
       return Bottom
 
+-- Reduces a term in another term and extends the environment with the result.
+reduceCmd :: Env -> [Token] -> IO Env
+reduceCmd env input =
+  let (a, rest)   = parseTm input in
+  let (b, _)      = parseTm rest in
+  let val         = eval ip a b in
+  let nf          = quote ip env val in
+  let newEnv      = extend ip env val in
+  do
+    when isTTY $ do
+      printTm nf
+      newLine
+    return newEnv
+
 -- Command processor.
-command :: Env -> String -> IO (Env, Bool)
+command :: Env -> String -> IO Env
 command env str =
   let input = tokenize str in
   case input of
-    []                  -> return (env, False)
-    TName "h" : _       -> do help; return (env, False)
-    TName "l" : _       -> do printEnv (quoteEnv ip env); return (env, False)
+    []                  -> return env
+    TName "x" : _       -> do exitSuccess
+    TName "e" : rest    -> do evaluate env rest; return env
+    TName "th" : rest   -> do assertTheorem env rest
+    TName "eq" : rest   -> do assertEq env rest
+    TName "so" : rest   -> do reduceCmd env rest
+    TName "h" : _       -> do help; return env
+    TName "l" : _       -> do printEnv (quoteEnv ip env); return env
     TName "c" : _       -> do when isTTY $
                                 putStrLn "#-------- clear --------"
-                              return (emptyEnv ip, False)
-    TName "x" : _       -> do return (env, True)
-    TName "e" : rest    -> do evaluate env rest; return (env, False)
-    TName "as" : rest   -> do newEnv <- assert env rest
-                              return (newEnv, False)
-    TName "eq" : rest   -> do newEnv <- assertEq env rest
-                              return (newEnv, False)
-    _                   -> do putStrLn "unknown command"; return (env, False)
+                              return (initial ip)
+    _                   -> do putStrLn "unknown command"; return env
 
 help :: IO ()
 help = do
@@ -318,8 +329,9 @@ help = do
   putStrLn "  Test commands:"
   putStrLn "  .t <text> - clear the environment and print 'test <text>'"
   putStrLn "  .e t      - evaluate t without extending the environment"
-  putStrLn "  .as t     - assert t"
+  putStrLn "  .th t     - assert t is a theorem"
   putStrLn "  .eq t u   - assert equality of t and u"
+  putStrLn "  .so t u   - reduce t in u and extend the env. with the result"
 
 -- Read-eval-print-loop.
 repl :: Env -> IO ()
@@ -335,13 +347,13 @@ repl env = do
     case trim line of
       []                -> repl env
       '#' : _           -> repl env
-      '.' : 't' : rest  -> do putStr "test"; putStrLn rest; repl (emptyEnv ip)
-      '.' : rest        -> do (newEnv, exit) <- command env (trim rest)
-                              unless exit (repl newEnv)
+      '.' : 't' : ' ' : rest -> do putStr "test"; putStrLn rest; repl (initial ip)
+      '.' : rest        -> do newEnv <- command env (trim rest)
+                              repl newEnv
       str               -> do newEnv <- interpret env str
                               repl newEnv
 
 main :: IO ()
 main = do
   when isTTY $ putStrLn "Type .h for help"
-  repl (emptyEnv ip)
+  repl (initial ip)
