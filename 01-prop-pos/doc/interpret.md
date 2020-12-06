@@ -7,13 +7,13 @@ Let's recall steps of interpretation.
 4. If the value is a declaration (always), extend the environment with it.
 3. Write the value to the output.
 
-Steps 2 and 3 can be unified in an interpretation operation.
+Steps 2 and 3 can be merged in a single interpretation operation.
 This page summarizes the properties of that operation and its dependencies. 
 On this page `e` denotes environments, `t` and `u` denote input terms,
 `Θ` denotes a sequence of input terms and `v` denote values.
 
 ~~~haskell
-interpret :: Tm -> Tm -> Tm       -- implementation type
+interpret :: Tm -> Tm -> Tm
 interpret e t = extend e (eval e t)
 ~~~
 

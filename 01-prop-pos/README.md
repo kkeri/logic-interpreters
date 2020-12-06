@@ -23,8 +23,8 @@ I envision an environment where *doing* is almost the same as programming.
 
 Surprisingly the environment which best approximates this idea is
 the command line with shell scripting.
-A possible reason is that command line tools offer strong abstractions
-(processes, input, output, pipes)
+A possible reason is that shell scripting offers simple but powerful
+abstractions (processes, input and output streams, pipes)
 that support composition more than any kind of GUI.
 
 The [CALM theorem](https://rise.cs.berkeley.edu/blog/an-overview-of-the-calm-theorem/)
@@ -121,7 +121,7 @@ b
 >              -- empty output indicates success
 ~~~
 
-If an assertion failes, the interpreter terminates.
+If an assertion has failed, the interpreter terminates.
 In interactive mode you can recover from termination by clearing
 the environment.
 
@@ -155,33 +155,35 @@ A disjunction can be interpreted as the exact list of terms that
 make it a theorem:
 
 ~~~haskell
-> [e f]
-[e f]
-> e       -- declare one of the alternatives
-e
-> [e f]
+> [i j]
+[i j]
+> i       -- declare one of the alternatives
+i
+> [i j]
 {}        -- it is a theorem now
 > .l
-e         -- where is [e f]?
+i         -- but where is [i j]?
 ~~~
 
-Listing the environment testifies that `[e f]` 'magically' disappeared.
-When the environment is extended, the new declaration is *backpropagated*
-to the environment.
-As `e` implies `[e f]`, the latter became redundant.
+Listing the environment testifies that `[i j]` 'magically' disappeared.
+The reason: when the environment had been extended with `i`,
+the new declaration was *backpropagated* to the environment.
+As `i` implies `[i j]`, the latter became redundant.
 This is not only an optimization but an essential part of the semantics
 of interpretation.
 
-We can also think about the interpreter as our input was a *program*.
-Eventually a program is just a list of declarations.
-This view is entirely compatible with the *theorem prover* view,
-and it is a nice thing!
+We can also think of the sequence of input terms as a *program*.
+Eventually a program consists of declarations, let them be
+types, variables, functions, imports etc., and optionally a main program.
+(The [test script](test.in) of this project is written this way.)
+This viewpoint is entirely compatible with the *theorem prover* viewpoint,
+and it's a nice thing!
 Of course this simple calculus is too skinny for a programming language
 (we don't even have variables and functions) but don't forget,
 this is just the beginning.
 
 If you are interested,
-you can learn about the exact details [here](doc/interpret.md).
+you can learn about the details [here](doc/interpret.md).
 
 ## Building, running and testing
 
