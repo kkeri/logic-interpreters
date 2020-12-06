@@ -111,8 +111,8 @@ every term may alter the interpretation of subsequent terms.
 If it helps, you can think about the interpreter as a
 conditional theorem prover.
 
-Below we introduce two premises and verify if their
-conjunction is a theorem, as it should be.
+Below we introduce two premises and assert that their
+conjunction is a theorem.
 
 ~~~haskell
 > a
@@ -123,7 +123,7 @@ b
 >              -- empty output indicates success
 ~~~
 
-If verification failes, the interpreter terminates.
+If an assertion failes, the interpreter terminates.
 In interactive mode you can recover from termination by clearing
 the environment.
 
