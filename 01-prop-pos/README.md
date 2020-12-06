@@ -108,11 +108,9 @@ every term may alter the interpretation of subsequent terms.
 
 ## Examples
 
-If it helps, you can think about the interpreter as a
-conditional theorem prover.
+One way to think about the interpreter is a conditional theorem prover.
 
-Below we introduce two premises and assert that their
-conjunction is a theorem.
+Let's introduce two premises and assert their conjunction is a theorem.
 
 ~~~haskell
 > a
