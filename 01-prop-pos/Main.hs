@@ -22,12 +22,12 @@ data Tm
 -- operations and predicates
 ------------------------------------------------------------------------------
 
--- This part is work in progress --
+-- This part is under development --
 
 -- The reduceDual operation allows for sequent calculus style problem reduction.
--- Note: we want to reduce problems to problems (formulae to formulae) rather
--- than to success/failure. To achieve this, both 'reduce' and the subresult
--- combinators 'and' and 'or' have to return formulae in the default case.
+-- Note: if we want to reduce problems to problems (formulas to formulas) rather
+-- than yes/no, both 'reduce' and the subresult combinators 'and' and 'or'
+-- have to return formulas in the default case.
 
 -- Reduce the right hand side in the left hand side.
 -- Requirements:
@@ -94,7 +94,6 @@ data Ip env tm val = Ip
 -- between environments, terms and values still makes sense.
 -- For example, extending the environment with an unevaluated term
 -- might break some properties of interpretation.
-
 logicIp :: Tm -> Tm -> (Tm -> Tm -> Tm) -> Ip Tm Tm Tm
 logicIp initial terminal append = Ip
   { initial = initial,
@@ -147,9 +146,9 @@ tokenize (c : cs)
 
 -- Generic term parser.
 parse :: forall env tm val.
-  (String -> tm) ->        -- translates a name
-  Ip env tm val ->         -- interprets terms between {...}
-  Ip env tm val ->         -- interprets terms between [...]
+  (String -> tm) ->        -- translate a name
+  Ip env tm val ->         -- interpret terms between {...}
+  Ip env tm val ->         -- interpret terms between [...]
   [Token] -> (tm, [Token])
 parse parseName bracesIp bracketsIp = parseTerm where
 
@@ -161,9 +160,8 @@ parse parseName bracesIp bracketsIp = parseTerm where
     TDelim '[' : rest -> parseSeq ']' bracketsIp (initial bracketsIp) rest
     TDelim d   : _    -> error $ "Unexpected delimiter " ++ [d]
 
-  -- Parse a sequence of terms and interpret all of them in an
-  -- embedded environment. Yield the quotation of the final environment.
-  -- Shortcut semantics and skipTerm allow for single pass interpretation.
+  -- Parse a sequence of terms and interpret them in a nested environment.
+  -- Note: shortcut semantics and skipTerm allow for single pass interpretation.
   parseSeq :: Char -> Ip env tm val -> env -> [Token] -> (tm, [Token])
   parseSeq eos ip env input = case input of
     [] -> error $ "expected " ++ [eos] ++ " but got end of input"
@@ -204,7 +202,7 @@ printConj t         = printTm t
 printDisj (Or a b) = do printDisj a; putChar ' '; printDisj b
 printDisj t        = printTm t
 
--- Treat a term as n-ary conjunction and print its operands in separate rows.
+-- Print the top level environment.
 printEnv :: Tm -> IO ()
 printEnv Top       = return ()  -- don't list an empty program
 printEnv (And a b) = do printEnv a; printEnv b
@@ -267,8 +265,6 @@ assertTheorem env input =
     else do
       putStr "can't prove "; printTm t;
       newLine
-      putStr "requires  : "; printTm nf
-      newLine
       return Bottom
 
 -- Fail if two terms are not equal.
@@ -282,9 +278,7 @@ assertEq env input =
     then
       return env
     else do
-      putStr "expected "; printTm a; putStr " == "; printTm b
-      newLine
-      putStr "but      "; printTm nfa; putStr " /= "; printTm nfb
+      printTm nfa; putStr " /= "; printTm nfb
       newLine
       return Bottom
 
@@ -308,16 +302,16 @@ command env str =
   let input = tokenize str in
   case input of
     []                  -> return env
-    TName "x" : _       -> do exitSuccess
-    TName "e" : rest    -> do evaluate env rest; return env
-    TName "th" : rest   -> do assertTheorem env rest
-    TName "eq" : rest   -> do assertEq env rest
-    TName "so" : rest   -> do reduceCmd env rest
-    TName "h" : _       -> do help; return env
     TName "l" : _       -> do printEnv (quoteEnv ip env); return env
     TName "c" : _       -> do when isTTY $
                                 putStrLn "#-------- clear --------"
                               return (initial ip)
+    TName "x" : _       -> do exitSuccess
+    TName "h" : _       -> do help; return env
+    TName "e" : rest    -> do evaluate env rest; return env
+    TName "th" : rest   -> do assertTheorem env rest
+    TName "eq" : rest   -> do assertEq env rest
+    TName "re" : rest   -> do reduceCmd env rest
     _                   -> do putStrLn "unknown command"; return env
 
 help :: IO ()
@@ -331,7 +325,7 @@ help = do
   putStrLn "  .e t      - evaluate t without extending the environment"
   putStrLn "  .th t     - assert t is a theorem"
   putStrLn "  .eq t u   - assert equality of t and u"
-  putStrLn "  .so t u   - reduce t in u and extend the env. with the result"
+  putStrLn "  .re t u   - reduce t in u and extend the env. with the result"
 
 -- Read-eval-print-loop.
 repl :: Env -> IO ()
@@ -347,7 +341,7 @@ repl env = do
     case trim line of
       []                -> repl env
       '#' : _           -> repl env
-      '.' : 't' : ' ' : rest -> do putStr "test"; putStrLn rest; repl (initial ip)
+      '.' : 't' : ' ' : rest -> do putStr "test "; putStrLn rest; repl (initial ip)
       '.' : rest        -> do newEnv <- command env (trim rest)
                               repl newEnv
       str               -> do newEnv <- interpret env str
