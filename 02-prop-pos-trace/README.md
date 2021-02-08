@@ -1,4 +1,4 @@
-# 01-prop-pos-trace
+# 02-prop-pos-trace
 
 Based on: [01-prop-pos](../01-prop-pos/README.md)
 
@@ -252,7 +252,7 @@ and the value of the block is interpreted as a single term.
 Finally an example that clarifies the role of backpropagation.
 
 Without clearing the environment `[a b]`, let's enter the atom `a`.
-The third case of the `reduce` function matches the arguments.
+The fourth case of the `reduce` function matches the arguments.
 
 ~~~haskell
   reduce (Or a b) c = 
