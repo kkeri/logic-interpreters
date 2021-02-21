@@ -1,10 +1,10 @@
-name:                logint-prop-pos
+name:                logint-prop-pos-trace
 version:             0.1.0.0
 github:              "kkeri/logic-interpreters"
 license:             BSD3
 author:              "Kálmán Kéri"
 maintainer:          "kk@metamaya.org"
-copyright:           "2020 Kálmán Kéri"
+copyright:           "2021 Kálmán Kéri"
 
 extra-source-files:
 - README.md
