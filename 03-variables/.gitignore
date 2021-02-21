@@ -1,0 +1,6 @@
+.stack-work/
+*~
+hie.yaml
+*.cabal
+*.lock
+
