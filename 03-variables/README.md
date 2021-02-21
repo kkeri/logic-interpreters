@@ -7,8 +7,8 @@ Contribution:
 
 ## Analysis
 
-Usually an environment is a list of bindings.
-But it's different in logic interpreters.
+Usually we think of an environment as a list of bindings,
+but it's different in logic interpreters.
 
 **Environments = Logical formulas ( = Programs)**
 
@@ -76,7 +76,7 @@ reduce' (Def n v) (Name o) | n == o = return v -- variable resolution
 b            -- ok
 > .l
 def a {}     -- stating a variable name evacuates the variable declaration
-b            -- can I evaluate a variable without stating it?
+b            -- can I evaluate a variable without adding its value to the env?
 
 
 > a
@@ -87,7 +87,7 @@ def a b
 
 > def a b    -- b
 > def a c    -- c
-> .e a
+> .e a       -- only evaluate a and print its value
 [b c]        -- could be {a b} as well
 
 > def a b    -- b
@@ -103,8 +103,9 @@ def a b
 
 Problems:
 
-- we get results from unrelated `def`s
+- We get results from unrelated `def`s.
 - Chained declarations are incorrectly handled.
+- Variable evacuation is weird.
 
 ### Rule 2
 
@@ -117,7 +118,7 @@ reduce' a (Def n v) = do w <- reduce a v; return (Def n w) -- reduce value of ne
 > .e a
 c
 > .l
-def a c      -- second declaration is backpropagated
+def a c      -- second declaration is backpropagated, that's ok
 def b c
 
 > def a b    -- b
